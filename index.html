@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow,noarchive"><meta name="referrer" content="no-referrer">
+<title>CI OG Posts Review</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=DM+Sans:wght@400;500;700&display=swap">
+<style>
+/* Layout: overview of the finished grid, then one card per post (image, caption, approve / change, note), verdict box at the end. */
+:root{
+  --bg:#141413; --surface:#1d1d1b; --line:#33322f; --fg:#ecebe7; --muted:#a09e95;
+  --ok:#C9F57E; --okink:#151312; --chip:#262624;
+  --display:'Cormorant Garamond',Georgia,serif; --ui:'DM Sans',system-ui,sans-serif;
+  color-scheme:dark;
+}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){
+  --bg:#efeeea; --surface:#fbfaf7; --line:#d7d5cd; --fg:#1b1b19; --muted:#6c6a62; --chip:#e4e2db; color-scheme:light}}
+:root[data-theme="light"]{--bg:#efeeea; --surface:#fbfaf7; --line:#d7d5cd; --fg:#1b1b19; --muted:#6c6a62; --chip:#e4e2db; color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0}img{max-width:100%}[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font-family:var(--ui);font-size:15px;line-height:1.5;padding-inline:16px;padding-block:0 72px}
+.wrap{max-width:1100px;margin:0 auto}
+header{padding-block:30px 10px}
+h1{font-family:var(--display);font-weight:600;font-size:clamp(32px,5vw,46px);margin:0 0 8px}
+.lede{color:var(--muted);margin:0;max-width:62ch;font-size:16px}
+.overview{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start;padding-block:22px}
+.overview img{width:min(100%,300px);height:auto;border-radius:6px;display:block}
+.overview .txt{flex:1;min-width:240px;max-width:52ch}
+.overview h2{font-family:var(--display);font-weight:600;font-size:26px;margin:0 0 6px}
+.overview p{margin:0 0 10px;color:var(--muted)}
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);padding-block:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.chip{font:inherit;font-size:13px;background:var(--chip);color:var(--fg);border:1px solid var(--line);border-radius:999px;padding:6px 12px;cursor:pointer}
+.chip b{font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+.chip.on{outline:2px solid var(--fg)}
+.spacer{flex:1}
+.act.alt{background:var(--chip);color:var(--fg);border:1px solid var(--line)}
+.act{font:inherit;font-size:13px;font-weight:700;background:var(--ok);color:var(--okink);border:0;border-radius:6px;padding:8px 14px;cursor:pointer}
+button:focus-visible,textarea:focus-visible,.v:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:30px 18px;padding-top:24px}
+.card{display:flex;flex-direction:column;gap:10px;min-width:0}
+.card[hidden]{display:none!important}
+.ph{position:relative;aspect-ratio:4/5;background:var(--surface);border-radius:6px;overflow:hidden}
+.ph img{width:100%;height:100%;object-fit:cover;display:block}
+.card.ok .ph{outline:4px solid var(--ok);outline-offset:-4px}
+.card.chg .ph{opacity:.55}
+.tag{position:absolute;left:8px;top:8px;background:rgba(0,0,0,.6);color:#fff;font-size:12px;padding:2px 9px;border-radius:999px;font-variant-numeric:tabular-nums}
+.cap{margin:0;white-space:pre-line;font-size:14px}
+.cap small{display:block;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;font-size:11px;margin-bottom:3px}
+.vs{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.v{font:inherit;font-weight:500;background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:9px 6px;cursor:pointer}
+.v[aria-pressed="true"][data-v="ok"]{background:var(--ok);border-color:var(--ok);color:var(--okink)}
+.v[aria-pressed="true"][data-v="chg"]{background:var(--fg);border-color:var(--fg);color:var(--bg)}
+textarea{font:inherit;font-size:14px;width:100%;min-height:44px;resize:vertical;background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:8px}
+textarea::placeholder{color:var(--muted)}
+.sv{font-size:12px;color:var(--muted);min-height:15px}
+.out{margin-top:36px;border-top:1px solid var(--line);padding-top:18px}
+.out h2{font-family:var(--display);font-weight:600;font-size:26px;margin:0 0 8px}
+#verdict{min-height:150px;font:12px/1.5 ui-monospace,Menlo,monospace}
+.note{color:var(--muted);font-size:13px;margin:10px 0 0;max-width:70ch}
+.empty{color:var(--muted);padding:30px 0}
+
+.overview .mini{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;width:min(100%,330px)}
+.mini a{position:relative;display:block;aspect-ratio:4/5;background:var(--surface);overflow:hidden}
+.mini img{width:100%;height:100%;object-fit:cover;display:block}
+.mini .m{position:absolute;right:4px;top:4px;min-width:20px;height:20px;border-radius:999px;background:rgba(0,0,0,.65);color:#fff;font-size:11px;line-height:20px;text-align:center;padding:0 5px}
+.mini .live .m{background:var(--ok);color:var(--okink);font-weight:700}
+.mini .held img,.mini .todo img{opacity:.45}
+.legend{display:flex;flex-wrap:wrap;gap:8px}
+.k{font-size:12px;padding:3px 10px;border-radius:999px;border:1px solid var(--line);background:var(--chip);color:var(--fg)}
+.k.live{background:var(--ok);color:var(--okink);border-color:var(--ok);font-weight:700}
+.stat{position:absolute;right:8px;top:8px;font-size:12px;padding:2px 9px;border-radius:999px;background:rgba(0,0,0,.65);color:#fff}
+.card.s-live .stat{background:var(--ok);color:var(--okink);font-weight:700}
+.card.s-held .ph img,.card.s-todo .ph img{opacity:.6}
+
+.rosterwrap{padding-block:18px 4px}
+.rosterwrap h2{font-family:var(--display);font-weight:600;font-size:26px;margin:0 0 4px}
+.rosterwrap p{margin:0 0 12px;color:var(--muted)}
+.roster{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px}
+.rc{position:relative;display:block;text-decoration:none;color:var(--fg);font-size:11px;text-align:center}
+.rc img{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:4px;display:block}
+.rc b{display:block;font-weight:700;margin-top:3px}
+.rc span{display:block;color:var(--muted)}
+.rc.live img,.rc.sched img,.rc.appr img{outline:3px solid var(--ok);outline-offset:-3px}
+.rc.new img{outline:3px dashed var(--muted);outline-offset:-3px}
+.rc.review img{opacity:.75}
+.card.s-new .stat{background:var(--fg);color:var(--bg);font-weight:700}
+.card.s-appr .stat{background:var(--ok);color:var(--okink);font-weight:700}
+
+.capedit{font:inherit;font-size:14px;line-height:1.55;width:100%;min-height:230px;resize:vertical;background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:10px}
+.cap small{display:block;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;font-size:11px;margin-bottom:3px}
+.lic{font-size:12px;color:var(--muted)}
+.lic a{color:var(--fg)}
+.warnbox{background:var(--chip);border-left:3px solid var(--ok);padding:6px 10px;border-radius:2px;font-size:12.5px}
+.ref{margin-top:34px;border-top:1px solid var(--line);padding-top:16px}
+.ref h2{font-family:var(--display);font-weight:600;font-size:26px;margin:0 0 6px}
+.ref .cap{margin:0 0 18px;max-width:80ch;color:var(--muted)}
+.edited{font-size:12px;color:var(--ok)}
+.stat{top:auto!important;bottom:8px;right:auto;left:8px}
+</style>
+<body>
+<div class="wrap">
+<header>
+  <h1>CI OG Posts Review</h1>
+  <p class="lede">Ten OG portraits with a caption each, in the voice of your Paxton and Nancy posts. Read each caption and edit it right in the box. Tap <b>Approve</b> on the ones you like. If something is off, tap <b>Change</b> and say what. Nothing is posted from this page.</p>
+</header>
+<div class="bar" id="bar">
+  <button class="chip" data-f="todo">not reviewed <b id="n-todo">0</b></button>
+  <button class="chip" data-f="ok">approved <b id="n-ok">0</b></button>
+  <button class="chip" data-f="chg">change <b id="n-chg">0</b></button>
+  <span class="spacer"></span>
+  <button class="act" id="copy">Copy verdict</button>
+  <button class="act alt" id="wa">Send on WhatsApp</button>
+</div>
+<div class="overview">
+  <img src="img/plan.jpg" alt="Plan for the next nine posts on the grid" style="width:min(100%,360px);height:auto;border-radius:6px">
+  <div class="txt">
+    <h2>Where they land on the grid</h2>
+    <p>Portraits sit in the centre column on rows 1 and 3, class cards never touch the same colour, and your reels fill the footage slots when you have time. This is the plan for 18 to 26 Oct. The suggested day on each card below is when that OG would go out.</p>
+    <p>Suggested start: <b>Rainer or Cage</b>, whose photo and facts are the cleanest. Forti waits until her dates are confirmed.</p>
+  </div>
+</div>
+<main class="grid" id="grid"></main>
+<section class="ref"><h2>Your voice, for reference</h2><div id="refs"></div></section>
+<div class="out">
+  <h2>Anything else?</h2>
+  <textarea id="general" placeholder="Anything you would like to say about the whole batch"></textarea>
+  <div class="sv" id="gsv"></div>
+  <textarea id="verdict" readonly placeholder="Your verdict appears here after you press Copy verdict." style="margin-top:14px"></textarea>
+  <p class="note" id="where"></p>
+</div>
+</div>
+<script>
+const ITEMS = [{"n": 201, "id": "forti", "name": "Simone Forti", "years": "1935 to 2026", "src": "img/forti.jpg", "cap": "The OGs. Original gangsters of Contact Improvisation, movement and open awareness. This series is an effort to keep alive their knowledge, lineage and influence.\n\nSimone Forti made dances out of ordinary tasks and the pull of gravity. In 1961 she made Dance Constructions, a landmark of postmodern dance, and from then on she taught workshops around the world. She apprenticed with Anna Halprin in the fifties and later worked beside Steve Paxton, Trisha Brown, Robert Morris and many more. She wrote Handbook in Motion in 1974. A form that came out of people playing with weight and attention in a room together, she was in that room.\n\nPhoto: Jason Underhill, CC BY-SA 4.0, via Wikimedia Commons.\n\n#contactimprovisation #contactimpro #contactimprov #kohphangan #dance #contactimprovisacion", "url": "https://commons.wikimedia.org/wiki/File:Simone_Forti,_2015.jpg", "note": "Wikipedia lists her as 1935 to July 2026. Please confirm before posting.", "when": "Mon 19 Oct"}, {"n": 202, "id": "rainer", "name": "Yvonne Rainer", "years": "born 1934", "src": "img/rainer.jpg", "cap": "The OGs. Original gangsters of Contact Improvisation, movement and open awareness. This series is an effort to keep alive their knowledge, lineage and influence.\n\nYvonne Rainer is the sharpest no in this whole family tree. In 1965 she wrote the No Manifesto: no to spectacle, no to virtuosity, no to transformations and magic and make-believe. She was part of Judson Dance Theater, the same New York group where Paxton was making dances out of walking and falling, and she made her own work from plain movement and plain bodies. She also became a filmmaker. That permission to be an ordinary body in a room is in every jam you have ever joined.\n\nPhoto: Daniel Assayag, CC BY-SA 4.0, via Wikimedia Commons.\n\n#contactimprovisation #contactimpro #contactimprov #kohphangan #dance #contactimprovisacion", "url": "https://commons.wikimedia.org/wiki/File:Yvonne_Rainer_portrait_2014.jpg", "note": "", "when": "Sun 25 Oct"}, {"n": 203, "id": "cunningham", "name": "Merce Cunningham", "years": "1919 to 2009", "src": "img/cunningham.jpg", "cap": "The OGs. Original gangsters of Contact Improvisation, movement and open awareness. This series is an effort to keep alive their knowledge, lineage and influence.\n\nMerce Cunningham stood at the front of American modern dance for more than fifty years. He made dances with chance, worked beside John Cage, his partner for most of their lives, and brought in artists like Robert Rauschenberg and Jasper Johns. Many dancers who trained with him went on to start their own companies, including Deborah Hay and Remy Charlip. Steve Paxton danced in his company in the early sixties, then left and helped start Judson. That walk out of the studio is where we come from.\n\nPhoto: Fernand Michaud, 1986, via Wikimedia Commons.\n\n#contactimprovisation #contactimpro #contactimprov #kohphangan #dance #contactimprovisacion", "url": "https://commons.wikimedia.org/wiki/File:Merce_Cunningham_-_portrait_de_Fernand_Michaud_-_btv1b10329574s.jpg", "note": "Commons marks this photo public domain, but the photographer died in 2012, so the licence is not independently confirmed. You decided to use it.", "when": "Sat 31 Oct"}, {"n": 204, "id": "cage", "name": "John Cage", "years": "1912 to 1992", "src": "img/cage.jpg", "cap": "The OGs. Original gangsters of Contact Improvisation, movement and open awareness. This series is an effort to keep alive their knowledge, lineage and influence.\n\nThis is the man who made silence into a piece. John Cage came to chance through Indian philosophy and Zen Buddhism in the late forties, and from 1951 he composed with the I Ching. His best known work, 4'33\", is performed in the absence of deliberate sound. He described music as a way of waking up to the very life we are living. He also shaped modern dance, mostly through his life with Merce Cunningham, and Paxton danced in that company. Next time a jam goes quiet and something happens anyway, that is a little bit of Cage.\n\nPhoto: Rob Bogaerts for Anefo, 1988, CC0, via Wikimedia Commons.\n\n#contactimprovisation #contactimpro #contactimprov #kohphangan #dance #contactimprovisacion", "url": "https://commons.wikimedia.org/wiki/File:John_Cage_(1988).jpg", "note": "", "when": "Fri 6 Nov"}, {"n": 205, "id": "overlie", "name": "Mary Overlie", "years": "1946 to 2020", "src": "img/overlie.jpg", "cap": "The OGs. Original gangsters of Contact Improvisation, movement and open awareness. This series is an effort to keep alive their knowledge, lineage and influence.\n\nMary Overlie took performance apart into six pieces so we could look at each one: space, shape, time, emotion, movement and story. That is the Six Viewpoints, and it has been taught in the core curriculum of the Experimental Theater Wing at NYU Tisch since 1978. She also co-founded Danspace Project and Movement Research, two New York places where improvisation kept getting made. She won two Bessie awards, the last for her lifetime contribution to dance. If you ever leave a jam unable to say what was good about it, her six words are a good place to look.\n\nPhoto: Erin Burke, CC BY-SA 4.0, via Wikimedia Commons.\n\n#contactimprovisation #contactimpro #contactimprov #kohphangan #dance #contactimprovisacion", "url": "https://commons.wikimedia.org/wiki/File:Mary_Overlie.jpg", "note": "", "when": "Thu 12 Nov"}, {"n": 206, "id": "thich", "name": "Thích Nhất Hạnh", "years": "1926 to 2022", "src": "img/thich.jpg", "cap": "The OGs. Original gangsters of Contact Improvisation, movement and open awareness. This series is an effort to keep alive their knowledge, lineage and influence.\n\nThích Nhất Hạnh taught a lot of people how to slow down and listen. A Vietnamese Zen monk, poet and peace activist, he was exiled from South Vietnam in 1966 for opposing the war and refusing to take sides, and Martin Luther King Jr. nominated him for the Nobel Peace Prize the year after. He founded Plum Village in France in 1982 and spent decades teaching mindfulness. He offered deep listening as a peaceful answer to conflict. We practise deep listening with our whole skin when we dance. He died in 2022, aged 95.\n\nPhoto: Duc (pixiduc) from Paris, CC BY-SA 2.0, via Wikimedia Commons.\n\n#contactimprovisation #contactimpro #contactimprov #kohphangan #dance #contactimprovisacion", "url": "https://commons.wikimedia.org/wiki/File:Thich_Nhat_Hanh_12_(cropped).jpg", "note": "", "when": "Wed 18 Nov"}, {"n": 207, "id": "krishnamurti", "name": "Jiddu Krishnamurti", "years": "1895 to 1986", "src": "img/krishnamurti.jpg", "cap": "The OGs. Original gangsters of Contact Improvisation, movement and open awareness. This series is an effort to keep alive their knowledge, lineage and influence.\n\nHe was raised to be a messiah, and he gave it up. The Theosophical Society adopted Jiddu Krishnamurti as a child and prepared him to be the coming World Teacher. In 1929 he dissolved the order built around him and said that truth is a pathless land. He spent the rest of his life speaking to groups around the world, and he advised against following any teacher or guru, himself included. What he pointed to was choiceless awareness, attention with no goal. If your best moment in a jam came when you stopped steering, you were in his territory.\n\nPhoto: unknown author, 1920s, public domain, via Wikimedia Commons.\n\n#contactimprovisation #contactimpro #contactimprov #kohphangan #dance #contactimprovisacion", "url": "https://commons.wikimedia.org/wiki/File:Jiddu_Krishnamurti_01.jpg", "note": "", "when": "Tue 24 Nov"}, {"n": 208, "id": "duncan", "name": "Isadora Duncan", "years": "1877 to 1927", "src": "img/duncan.jpg", "cap": "The OGs. Original gangsters of Contact Improvisation, movement and open awareness. This series is an effort to keep alive their knowledge, lineage and influence.\n\nIsadora Duncan danced barefoot when ballet wanted shoes, and she is counted as a pioneer of modern dance. Born and raised in California, she left at 22 and danced to great acclaim across Western Europe, the United States and Soviet Russia. She wrote that true movements are not invented, they are discovered. Every jam runs on that idea: the dance is already there, waiting in the weight you share.\n\nPhoto: Dover Street Studios, public domain, via Wikimedia Commons.\n\n#contactimprovisation #contactimpro #contactimprov #kohphangan #dance #contactimprovisacion", "url": "https://commons.wikimedia.org/wiki/File:Isadora_Duncan_portrait_cropped.jpg", "note": "The Duncan quote card is already on the grid, so this post repeats that idea.", "when": "Mon 30 Nov"}, {"n": 209, "id": "ramana", "name": "Ramana Maharshi", "years": "1879 to 1950", "src": "img/ramana.jpg", "cap": "The OGs. Original gangsters of Contact Improvisation, movement and open awareness. This series is an effort to keep alive their knowledge, lineage and influence.\n\nAt sixteen Ramana Maharshi went through what he described as a death-experience, and a few weeks later he walked to the sacred mountain Arunachala in Tiruvannamalai. He stayed there for the rest of his life. People came to sit silently in his company or to ask him questions, and the practice he recommended above the rest was self-enquiry: asking, who am I? No method to perform, only the question. Come with a question. Leave with a better one.\n\nPhoto: G. G. Welling, 1948, public domain, via Wikimedia Commons.\n\n#contactimprovisation #contactimpro #contactimprov #kohphangan #dance #contactimprovisacion", "url": "https://commons.wikimedia.org/wiki/File:Sri_Ramana_Maharshi_-_Portrait_-_G._G_Welling_-_1948.jpg", "note": "", "when": "Sun 6 Dec"}, {"n": 210, "id": "eiko", "name": "Eiko & Koma", "years": "since 1972", "src": "img/eiko.jpg", "cap": "The OGs. Original gangsters of Contact Improvisation, movement and open awareness. This series is an effort to keep alive their knowledge, lineage and influence.\n\nEiko and Koma are a Japanese duo who make a theater out of stillness. Since 1972 they have been co-artistic directors, choreographers and usually the only performers in their own works, building their own sets and costumes. Neither studied traditional Japanese dance or theater, and they name the Butoh pioneer Kazuo Ohno as their main inspiration. They have lived in New York since 1976 and won a MacArthur Fellowship in 1996. Slow is a decision. They made it, and they stayed inside it.\n\nPhoto: George Quasha, CC BY 3.0, via Wikimedia Commons. The portrait is of Eiko Otake.\n\n#contactimprovisation #contactimpro #contactimprov #kohphangan #dance #contactimprovisacion", "url": "https://commons.wikimedia.org/wiki/File:Eiko_Otake.jpg", "note": "Weakest photo of the ten: a video still.", "when": "Sat 12 Dec"}];
+const REFS = [{"name": "Steve Paxton", "cap": "The OGs. Original gangsters of Contact Improvisation, Movement and Open awareness. One face at a time. This is the man who started it. Born in Phoenix, danced with Merce Cunningham in the early sixties, then helped start Judson Dance Theater, the group that decided walking and falling were part of the dance too. In 1972 he brought a bunch of students at Oberlin College into a piece called Magnesium, bodies crashing and catching, and a few months later showed the first Contact Improvisation in a New York gallery. He gave the form away, free for anyone to take and change. Every jam you have ever been to runs on that decision. He spent his later years on a farm in Vermont, still asking what the body knows before we tell it anything. Photo: NosPapillons, Culturgest, Lisbon 2019, CC BY-SA 4.0. #contactimprovisation #contactimpro #contactimprov #stevepaxton #dancer"}, {"name": "Nancy Stark Smith", "cap": "The OGs. Original gangsters of Contact Improvisation, movement and open awareness. One face at a time. If Paxton lit the match, Nancy kept the fire. A fking legend, a rockstar. A gymnast and dancer at Oberlin, she was in the room for those first 1972 performances and stayed with the form for the rest of her life. Go on youtube, you can't ever get bored with Nancy's bravery on the dance floor. A In 1975 she started Contact Quarterly, the journal that gave CI a written memory, and edited it for decades with Lisa Nelson. In 1990 she made the Underscore, the long-form score many of us still use to warm a room into a jam. When people call CI a practice you keep returning to, that is mostly Nancy talking. Photo via nancystarksmith.com. #contactimprovisation #contactimpro #contactimprov"}];
+let fb = {}, filt = {}, general = '';
+const LS = 'ci-og-posts-review';
+try { const o = JSON.parse(localStorage.getItem(LS) || '{}') || {}; fb = o.fb || {}; general = o.general || ''; } catch (e) {}
+function persist() { try { localStorage.setItem(LS, JSON.stringify({fb: fb, general: general})); } catch (e) {} }
+const id2 = n => 'o' + n;
+function setFb(n, patch) {
+  const k = id2(n); fb[k] = Object.assign({}, fb[k] || {}, patch); persist(); paintAll();
+  const c = cards[k]; if (c) { c.sv.textContent = 'Saved on this device'; }
+}
+const grid = document.getElementById('grid'); const cards = {};
+ITEMS.forEach(function (it) {
+  const c = document.createElement('div'); c.className = 'card'; c.id = 'c' + it.n;
+  c.innerHTML = '<div class="ph"><img loading="lazy" alt=""><span class="tag"></span><span class="stat"></span></div>' +
+    '<p class="cap"><small>Caption (edit here)</small></p><textarea class="capedit" spellcheck="true"></textarea><div class="lic"></div><div class="edited"></div>' +
+    '<div class="vs"><button class="v" data-v="ok" aria-pressed="false">Approve</button><button class="v" data-v="chg" aria-pressed="false">Change</button></div>' +
+    '<textarea class="nt" rows="1" placeholder="What would you like changed? (optional)"></textarea><div class="sv"></div>';
+  c.querySelector('img').src = it.src; c.querySelector('img').alt = 'Portrait of ' + it.name;
+  c.querySelector('.tag').textContent = it.name + ' · ' + it.years;
+  c.querySelector('.stat').textContent = 'Suggested ' + it.when + ', 09:00';
+  const ce = c.querySelector('.capedit'); ce.value = it.cap; ce.rows = 12;
+  const lic = c.querySelector('.lic'); if (it.url) lic.innerHTML = '<a href="' + it.url + '" target="_blank" rel="noopener">Photo licence page</a>';
+  if (it.note) { const w = document.createElement('div'); w.className = 'warnbox'; w.textContent = it.note; c.insertBefore(w, c.querySelector('.cap')); }
+  c.querySelectorAll('.v').forEach(function (b) {
+    b.addEventListener('click', function () { const cur = (fb[id2(it.n)] || {}).v; setFb(it.n, {v: cur === b.dataset.v ? '' : b.dataset.v}); });
+  });
+  let t1 = null; ce.addEventListener('input', function () { clearTimeout(t1); t1 = setTimeout(function () { setFb(it.n, {cap: ce.value === it.cap ? '' : ce.value}); }, 600); });
+  const nt = c.querySelector('.nt'); let t2 = null;
+  nt.addEventListener('input', function () { clearTimeout(t2); t2 = setTimeout(function () { setFb(it.n, {note: nt.value}); }, 600); });
+  cards[id2(it.n)] = {el: c, ce: ce, nt: nt, sv: c.querySelector('.sv'), ed: c.querySelector('.edited'), it: it};
+  grid.appendChild(c);
+});
+const refs = document.getElementById('refs');
+REFS.forEach(function (r) { const p = document.createElement('p'); p.className = 'cap'; p.innerHTML = '<small></small><span class="t"></span>'; p.querySelector('small').textContent = r.name + ' (already posted)'; p.querySelector('.t').textContent = r.cap; refs.appendChild(p); });
+const gen = document.getElementById('general'); gen.value = general; let gt = null;
+gen.addEventListener('input', function () { clearTimeout(gt); gt = setTimeout(function () { general = gen.value; persist(); document.getElementById('gsv').textContent = 'Saved on this device'; }, 700); });
+function paintAll() {
+  const active = Object.keys(filt).filter(function (k) { return filt[k]; });
+  let todo = 0, ok = 0, chg = 0;
+  ITEMS.forEach(function (it) {
+    const c = cards[id2(it.n)], d = fb[id2(it.n)] || {}, v = d.v || '';
+    if (!v) todo++; if (v === 'ok') ok++; if (v === 'chg') chg++;
+    c.el.classList.toggle('ok', v === 'ok'); c.el.classList.toggle('chg', v === 'chg');
+    c.el.querySelectorAll('.v').forEach(function (b) { b.setAttribute('aria-pressed', String(v === b.dataset.v)); });
+    if (document.activeElement !== c.nt) c.nt.value = d.note || '';
+    if (document.activeElement !== c.ce) c.ce.value = d.cap ? d.cap : it.cap;
+    c.ed.textContent = d.cap ? 'Edited by you' : '';
+    c.el.hidden = active.length > 0 && active.indexOf(v || 'todo') < 0;
+  });
+  document.getElementById('n-todo').textContent = todo; document.getElementById('n-ok').textContent = ok; document.getElementById('n-chg').textContent = chg;
+  document.querySelectorAll('.chip').forEach(function (b) { b.classList.toggle('on', !!filt[b.dataset.f]); });
+}
+document.querySelectorAll('.chip').forEach(function (b) { b.addEventListener('click', function () { filt[b.dataset.f] = !filt[b.dataset.f]; paintAll(); }); });
+function buildVerdict() {
+  const pick = v => ITEMS.filter(i => (fb[id2(i.n)] || {}).v === v).map(i => i.name).join(', ') || 'none';
+  const notes = ITEMS.filter(i => ((fb[id2(i.n)] || {}).note || '').trim()).map(i => i.name + ': ' + fb[id2(i.n)].note.trim());
+  if (gen.value.trim()) notes.push('General: ' + gen.value.trim());
+  const eds = ITEMS.filter(i => (fb[id2(i.n)] || {}).cap).map(i => '--- ' + i.name + ' (edited caption)\n' + fb[id2(i.n)].cap);
+  return 'CI OG VERDICT\napproved: ' + pick('ok') + '\nchange: ' + pick('chg') + '\nnotes:\n' + (notes.join('\n') || 'none') + '\nedited captions:\n' + (eds.join('\n\n') || 'none');
+}
+document.getElementById('copy').addEventListener('click', function () {
+  const txt = buildVerdict(), ta = document.getElementById('verdict'); ta.value = txt; const btn = document.getElementById('copy');
+  const done = function () { btn.textContent = 'Copied'; setTimeout(function () { btn.textContent = 'Copy verdict'; }, 1800); }; const sel = function () { ta.focus(); ta.select(); };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, sel); else sel();
+});
+document.getElementById('wa').addEventListener('click', function () { const t = buildVerdict(); document.getElementById('verdict').value = t; window.location.href = 'https://wa.me/?text=' + encodeURIComponent(t); });
+document.getElementById('where').textContent = 'Your edits and answers are saved on this device while you work. When you are done, press Copy verdict and paste it to Claude.';
+paintAll();
+</script>
+</body></html>
